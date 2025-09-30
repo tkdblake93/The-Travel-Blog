@@ -21,30 +21,17 @@ table.button {
   vertical-align: bottom !important;
 }
 
-.warning th {
-  background: $warning-color;
-  background-color: $warning-color;
-}
+th.callout-inner {
+  border: none !important;
 
-.secondary th {
-  background: $secondary-color;
-  background-color: $secondary-color;
-}
+  p {
+    color: $white;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-align: center;
+  }
 
-.primary {
-  background: $primary-color;
-  background-color: $primary-color;
-}
-
-.warning img,
-.secondary img,
-.primary img {
-  margin: 0 auto;
-}
-
-.warning h3,
-.secondary h3,
-.primary h3 {
-  color: $white;
-  text-align: center;
+  img {
+    margin: 0 auto;
+  }
 }

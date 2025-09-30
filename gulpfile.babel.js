@@ -1,16 +1,16 @@
-import gulp     from 'gulp';
-import plugins  from 'gulp-load-plugins';
-import browser  from 'browser-sync';
-import rimraf   from 'rimraf';
-import panini   from 'panini';
-import yargs    from 'yargs';
+import gulp from 'gulp';
+import plugins from 'gulp-load-plugins';
+import browser from 'browser-sync';
+import rimraf from 'rimraf';
+import panini from 'panini';
+import yargs from 'yargs';
 import lazypipe from 'lazypipe';
-import inky     from 'inky';
-import fs       from 'fs';
-import siphon   from 'siphon-media-query';
-import path     from 'path';
-import merge    from 'merge-stream';
-import beep     from 'beepbeep';
+import inky from 'inky';
+import fs from 'fs';
+import siphon from 'siphon-media-query';
+import path from 'path';
+import merge from 'merge-stream';
+import beep from 'beepbeep';
 
 const $ = plugins();
 
@@ -20,6 +20,8 @@ dartSass.compiler = require('sass');
 // Look for the --production flag
 const PRODUCTION = !!yargs.argv.production;
 const EMAIL = yargs.argv.to;
+
+const purgecss = require('@fullhuman/postcss-purgecss');
 
 // Declar var so that both AWS and Litmus task can use it.
 var CONFIG;
@@ -58,7 +60,8 @@ function pages() {
       root: 'src/pages',
       layouts: 'src/layouts',
       partials: 'src/partials',
-      helpers: 'src/helpers'
+      helpers: 'src/helpers',
+      data: 'src/data'
     }))
     .pipe(inky())
     .pipe(gulp.dest('dist'));
@@ -75,12 +78,13 @@ function sass() {
   return gulp.src('src/assets/scss/app.scss')
     .pipe($.if(!PRODUCTION, $.sourcemaps.init()))
     .pipe(dartSass.sync({
-        includePaths: ['node_modules/foundation-emails/scss']
+      includePaths: ['node_modules/foundation-emails/scss']
     }).on('error', dartSass.logError))
-    .pipe($.if(PRODUCTION, $.uncss(
-      {
-        html: ['dist/**/*.html']
-      })))
+    .pipe($.postcss([
+      purgecss({
+        content: ['dist/**/*.html']
+      })
+    ]))
     .pipe($.if(!PRODUCTION, $.sourcemaps.write()))
     .pipe(gulp.dest('dist/css'));
 }
@@ -141,7 +145,7 @@ function inliner(css) {
 function creds(done) {
   var configPath = './config.json';
   try { CONFIG = JSON.parse(fs.readFileSync(configPath)); }
-  catch(e) {
+  catch (e) {
     beep();
     console.log('[AWS]'.bold.red + ' Sorry, there was an issue locating your config.json. Please see README.md');
     process.exit();
@@ -173,7 +177,7 @@ function litmus() {
   var awsURL = !!CONFIG && !!CONFIG.aws && !!CONFIG.aws.url ? CONFIG.aws.url : false;
 
   return gulp.src('dist/**/*.html')
-    .pipe($.if(!!awsURL, $.replace(/=('|")(\/?assets\/img)/g, "=$1"+ awsURL)))
+    .pipe($.if(!!awsURL, $.replace(/=('|")(\/?assets\/img)/g, "=$1" + awsURL)))
     .pipe($.litmus(CONFIG.litmus))
     .pipe(gulp.dest('dist'));
 }
@@ -187,7 +191,7 @@ function mail() {
   }
 
   return gulp.src('dist/**/*.html')
-    .pipe($.if(!!awsURL, $.replace(/=('|")(\/?assets\/img)/g, "=$1"+ awsURL)))
+    .pipe($.if(!!awsURL, $.replace(/=('|")(\/?assets\/img)/g, "=$1" + awsURL)))
     .pipe($.mail(CONFIG.mail))
     .pipe(gulp.dest('dist'));
 }
@@ -199,7 +203,7 @@ function zip() {
 
   function getHtmlFiles(dir) {
     return fs.readdirSync(dir)
-      .filter(function(file) {
+      .filter(function (file) {
         var fileExt = path.join(dir, file);
         var isHtml = path.extname(fileExt) == ext;
         return fs.statSync(fileExt).isFile() && isHtml;
@@ -208,7 +212,7 @@ function zip() {
 
   var htmlFiles = getHtmlFiles(dist);
 
-  var moveTasks = htmlFiles.map(function(file){
+  var moveTasks = htmlFiles.map(function (file) {
     var sourcePath = path.join(dist, file);
     var fileName = path.basename(sourcePath, ext);
 
@@ -219,14 +223,14 @@ function zip() {
       }));
 
     var moveImages = gulp.src(sourcePath)
-      .pipe($.htmlSrc({ selector: 'img'}))
+      .pipe($.htmlSrc({ selector: 'img' }))
       .pipe($.rename(function (currentpath) {
         currentpath.dirname = path.join(fileName, currentpath.dirname.replace('dist', ''));
         return currentpath;
       }));
 
     return merge(moveHTML, moveImages)
-      .pipe($.zip(fileName+ '.zip'))
+      .pipe($.zip(fileName + '.zip'))
       .pipe(gulp.dest('dist'));
   });
 

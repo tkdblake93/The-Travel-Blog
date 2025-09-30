@@ -16,6 +16,35 @@ table.button {
   text-transform: uppercase;
 }
 
+.blog-post-image,
 .blog-post-excerpt {
   vertical-align: bottom !important;
+}
+
+.warning th {
+  background: $warning-color;
+  background-color: $warning-color;
+}
+
+.secondary th {
+  background: $secondary-color;
+  background-color: $secondary-color;
+}
+
+.primary {
+  background: $primary-color;
+  background-color: $primary-color;
+}
+
+.warning img,
+.secondary img,
+.primary img {
+  margin: 0 auto;
+}
+
+.warning h3,
+.secondary h3,
+.primary h3 {
+  color: $white;
+  text-align: center;
 }
